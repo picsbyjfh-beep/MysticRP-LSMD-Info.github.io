@@ -1,5 +1,22 @@
 // script.js
-// Mobile Navigation
+// Theme Management
+const themeToggle = document.getElementById('themeToggle');
+const body = document.body;
+let currentTheme = localStorage.getItem('theme') || 'dark';
+
+function initTheme() {
+    body.setAttribute('data-theme', currentTheme);
+    themeToggle.querySelector('i').className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    body.setAttribute('data-theme', currentTheme);
+    localStorage.setItem('theme', currentTheme);
+    themeToggle.querySelector('i').className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+// Navigation
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
 
@@ -8,15 +25,16 @@ hamburger.addEventListener('click', () => {
     navMenu.classList.toggle('active');
 });
 
-// Close mobile menu on link click
-document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
-    hamburger.classList.remove('active');
-    navMenu.classList.remove('active');
-}));
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+    });
+});
 
 // Smooth Scrolling
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
+    anchor.addEventListener('click', function(e) {
         e.preventDefault();
         const target = document.querySelector(this.getAttribute('href'));
         if (target) {
@@ -28,13 +46,15 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Navbar Background on Scroll
+// Navbar Scroll Effect
 window.addEventListener('scroll', () => {
-    const navbar = document.querySelector('.navbar');
+    const navbar = document.getElementById('navbar');
     if (window.scrollY > 100) {
-        navbar.style.background = 'rgba(0,0,0,0.95)';
+        navbar.style.padding = '0.5rem 0';
+        navbar.style.background = 'rgba(10, 10, 10, 0.95)';
     } else {
-        navbar.style.background = 'rgba(0,0,0,0.9)';
+        navbar.style.padding = '1rem 0';
+        navbar.style.background = 'rgba(255, 255, 255, 0.1)';
     }
 });
 
@@ -45,42 +65,44 @@ const observerOptions = {
 };
 
 const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
+    entries.forEach((entry, index) => {
         if (entry.isIntersecting) {
-            entry.target.classList.add('fade-in');
+            setTimeout(() => {
+                entry.target.classList.add('fade-in');
+            }, index * 100);
         }
     });
 }, observerOptions);
 
-// Observe sections and cards
-document.querySelectorAll('.section, .card, .team-card').forEach(el => {
+document.querySelectorAll('.section, .department-card, .stat-card, .rank-group').forEach(el => {
+    el.classList.add('animate-on-scroll');
     observer.observe(el);
 });
 
-// Stats Counter
+// Stats Counter Animation
 function animateCounters() {
-    const counters = document.querySelectorAll('.counter');
-    const speed = 200;
+    const counters = document.querySelectorAll('.stat-number');
+    const duration = 2000;
+    const step = 50;
 
     counters.forEach(counter => {
-        const updateCount = () => {
-            const target = +counter.getAttribute('data-target');
-            const count = +counter.innerText;
-            const inc = target / speed;
+        const target = parseInt(counter.getAttribute('data-target'));
+        let current = 0;
+        const increment = target / (duration / step);
 
-            if (count < target) {
-                counter.innerText = Math.ceil(count + inc);
-                setTimeout(updateCount, 1);
+        const updateCounter = () => {
+            current += increment;
+            if (current < target) {
+                counter.textContent = Math.floor(current);
+                setTimeout(updateCounter, step);
             } else {
-                counter.innerText = target;
+                counter.textContent = target;
             }
         };
-
-        updateCount();
+        updateCounter();
     });
 }
 
-// Trigger counters on scroll
 const statsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -92,12 +114,45 @@ const statsObserver = new IntersectionObserver((entries) => {
 
 statsObserver.observe(document.querySelector('.stats-section'));
 
-// Navbar shrink on scroll
+// Daily Stats Update
+function updateDailyStats() {
+    const now = new Date();
+    const lastUpdate = localStorage.getItem('lastStatsUpdate');
+    
+    if (!lastUpdate || now.getDate() !== new Date(lastUpdate).getDate()) {
+        let missions = parseInt(localStorage.getItem('missions') || '0') + 30;
+        let lives = parseInt(localStorage.getItem('lives') || '0') + 20;
+        
+        localStorage.setItem('missions', missions);
+        localStorage.setItem('lives', lives);
+        localStorage.setItem('lastStatsUpdate', now.toDateString());
+        
+        document.querySelector('.stat-number:nth-child(2)').setAttribute('data-target', missions);
+        document.querySelector('.stat-number:nth-child(3)').setAttribute('data-target', lives);
+    }
+}
+
+// Loading Screen
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        document.getElementById('loader').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('loader').style.display = 'none';
+        }, 500);
+    }, 1500);
+    
+    initTheme();
+    updateDailyStats();
+});
+
+// Event Listeners
+themeToggle.addEventListener('click', toggleTheme);
+
+// Parallax Effect
 window.addEventListener('scroll', () => {
-    const navbar = document.querySelector('.navbar');
-    if (window.scrollY > 50) {
-        navbar.style.padding = '0.5rem 0';
-    } else {
-        navbar.style.padding = '1rem 0';
+    const scrolled = window.pageYOffset;
+    const parallax = document.querySelector('.parallax');
+    if (parallax) {
+        parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
     }
 });
